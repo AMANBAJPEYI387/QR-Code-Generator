@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1976d2" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.png">
+  <title>QR Code Generator</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f5f5f5;
+      color: #000;
+    }
+    .dark-mode {
+      background-color: #1e1e1e;
+      color: #fff;
+    }
+    header {
+      background-color: #1976d2;
+      color: #fff;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .menu-title {
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+    }
+    .menu-title img {
+      width: 32px;
+      height: 32px;
+      margin-right: 10px;
+    }
+    .top-buttons button {
+      background: #fff;
+      color: #1976d2;
+      border: none;
+      padding: 8px 12px;
+      margin-left: 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .dark-mode .top-buttons button {
+      background: #333;
+      color: #fff;
+    }
+    main {
+      padding: 30px 20px;
+      text-align: center;
+    }
+    input, select {
+      padding: 12px;
+      width: 90%;
+      max-width: 400px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+      margin-bottom: 10px;
+    }
+    #qrcode {
+      margin: 25px auto;
+    }
+    .action-buttons button {
+      padding: 10px 18px;
+      margin: 10px 6px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #1976d2;
+      color: white;
+      cursor: pointer;
+    }
+    .dark-mode .action-buttons button {
+      background-color: #444;
+    }
+    #calc {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1e1e1e;
+      padding: 25px;
+      border-radius: 12px;
+      color: white;
+      z-index: 9999;
+    }
+    #calc input {
+      width: 100%;
+      padding: 12px;
+      font-size: 22px;
+      background: black;
+      color: #0f0;
+      border: none;
+      border-radius: 6px;
+    }
+    #calc-result {
+      font-size: 24px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="menu-title">
+      <img src="icon.png" alt="App Icon" /> Welcome
+    </div>
+    <div class="top-buttons">
+      <button onclick="toggleDarkMode()">🌓</button>
+      <button onclick="toggleCalc()">🧮</button>
+      <button onclick="installApp()">📲</button>
+      <button onclick="scanQRFromImage()">📷</button>
+      <button onclick="toggleLang()">🌐</button>
+    </div>
+  </header>
+
+  <main>
+    <input type="text" id="text" placeholder="Enter text or URL" oninput="generateQRCode()" />
+    <select id="expiry" onchange="generateQRCode()">
+      <option value="0">No Expiry</option>
+      <option value="10">10 seconds</option>
+      <option value="30">30 seconds</option>
+      <option value="60">1 minute</option>
+    </select>
+    <div id="qrcode"></div>
+    <div class="action-buttons">
+      <button onclick="downloadQR()">Download</button>
+    </div>
+    <input type="file" id="qr-image-upload" accept="image/*" onchange="decodeQRFromImage(this)" />
+  </main>
+
+  <div id="calc">
+    <input type="text" id="calc-display" placeholder="Enter expression..." oninput="liveCalc()">
+    <div id="calc-result">= 0</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+  <script>
+    let currentLang = 'en';
+    let qrTimeout;
+
+    function generateQRCode() {
+      clearTimeout(qrTimeout);
+      const text = document.getElementById('text').value.trim();
+      const expiry = parseInt(document.getElementById('expiry').value);
+      document.getElementById('qrcode').innerHTML = '';
+      if (!text) return;
+      new QRCode(document.getElementById('qrcode'), text);
+      if (expiry > 0) {
+        qrTimeout = setTimeout(() => {
+          document.getElementById('qrcode').innerHTML = '<p style="color:red">QR Expired</p>';
+        }, expiry * 1000);
+      }
+    }
+
+    function downloadQR() {
+      const img = document.querySelector('#qrcode img');
+      if (!img) return alert('Please generate a QR code first.');
+      const a = document.createElement('a');
+      a.href = img.src;
+      a.download = 'qr-code.png';
+      a.click();
+    }
+
+    function toggleDarkMode() {
+      document.body.classList.toggle('dark-mode');
+    }
+
+    function toggleCalc() {
+      const calc = document.getElementById('calc');
+      calc.style.display = calc.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function liveCalc() {
+      const input = document.getElementById('calc-display').value;
+      try {
+        const result = eval(input);
+        document.getElementById('calc-result').innerText = '= ' + result;
+      } catch {
+        document.getElementById('calc-result').innerText = '= ❌';
+      }
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'en' ? 'hi' : 'en';
+      document.querySelector('.menu-title').innerHTML = currentLang === 'en' ? '<img src="icon.png"/> Welcome' : '<img src="icon.png"/> स्वागत है';
+      document.getElementById('text').placeholder = currentLang === 'en' ? 'Enter text or URL' : 'पाठ या URL दर्ज करें';
+    }
+
+    function decodeQRFromImage(input) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          if (code) {
+            alert('Decoded QR Text: ' + code.data);
+          } else {
+            alert('No QR code found.');
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choice => {
+          if (choice.outcome === 'accepted') {
+            console.log('User accepted install');
+          }
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+    });
+  </script>
+</body>
+</html>
